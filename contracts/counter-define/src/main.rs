@@ -6,7 +6,7 @@ compile_error!("target arch should be wasm32: compile with '--target wasm32-unkn
 
 extern crate alloc;
 
-use alloc::{collections::BTreeMap, string::String, vec::Vec};
+use alloc::{string::String, vec::Vec};
 use casper_contract::{
     contract_api::{runtime, storage},
     unwrap_or_revert::UnwrapOrRevert,
@@ -14,7 +14,7 @@ use casper_contract::{
 use casper_types::{
     api_error::ApiError,
     contracts::{EntryPoint, EntryPointAccess, EntryPointType, EntryPoints},
-    CLType, CLValue, Key, URef,
+    CLType, CLValue, URef,
 };
 
 const COUNT_KEY: &str = "count";
@@ -49,10 +49,9 @@ pub extern "C" fn call() {
     // Initialize counter to 0.
     let counter_local_key = storage::new_uref(0_i32);
 
-    // Create initial named keys of the contract.
-    let mut counter_named_keys: BTreeMap<String, Key> = BTreeMap::new();
+    // Create initial named key in the Account
     let key_name = String::from(COUNT_KEY);
-    counter_named_keys.insert(key_name, counter_local_key.into());
+    runtime::put_key(&key_name, counter_local_key.into());
 
     // Create entry points to get the counter value and to increment the counter by 1.
     let mut counter_entry_points = EntryPoints::new();
@@ -61,17 +60,21 @@ pub extern "C" fn call() {
         Vec::new(),
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Session,
     ));
     counter_entry_points.add_entry_point(EntryPoint::new(
         COUNTER_GET,
         Vec::new(),
         CLType::I32,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Session,
     ));
 
     let (stored_contract_hash, _) =
-        storage::new_locked_contract(counter_entry_points, Some(counter_named_keys), None, None);
+        storage::new_locked_contract(counter_entry_points, 
+            None, //named keys
+            None, //hash name
+            None  //uref name
+        );
     runtime::put_key(COUNTER_KEY, stored_contract_hash.into());
 }

@@ -102,7 +102,7 @@ mod tests {
                 .query(
                     None,
                     Key::Account(self.account_address),
-                    &[COUNTER_KEY.to_string(), COUNT_KEY.to_string()],
+                    &[COUNT_KEY.to_string()],
                 )
                 .expect("should be stored value.")
                 .as_cl_value()
